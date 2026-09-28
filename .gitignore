@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.vscode/
+live_pill.jpg
+database.rxsort.db
+dataset/

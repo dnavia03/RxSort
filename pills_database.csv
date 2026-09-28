@@ -1,0 +1,11 @@
+pill_id,medication_name,brand_name,strength,imprint,color,shape,dosage_form,length_mm,width_mm
+1,Acetaminophen,"Test Brand","500 mg",TEST1,White,Oblong,Tablet,17.0,7.0
+2,advil,gogole,550,obong,white,circle,moth,55.0,55.0
+3,Ibuprofen,"","200 mg","44 291",Brown,Round,Tablet,9.6,9.6
+4,Simvastatin,"","20 mg","LL C03",Tan,Oval,Tablet,10.0,5.3
+5,"Amlodipine Besylate & Benazepril Hydrochloride","","5 mg / 40 mg","J 01",Blue,"Capsule / Oblong",Capsule,19.8,7.1
+6,"Fexofenadine Hydrochloride","","180 mg",L847,Pink,Oval,Tablet,7.8,17.8
+7,Mucinex,"","30 mg / 600 mg","Mucinex 600",Yellow/White,Oval,Tablet,15.2,9.2
+8,"Hydrochlorothiazide & Losartan Potassium ","","12.5 mg / 100 mg","F 74",White,Oval,Tablet,16.0,7.1
+9,"Prazosin Hydrochloride ","","2 mg","020 novitium ",Brown/Tan,Capsule,Capsule,16.2,5.3
+10,"Propranolol Hydrochloride","","60 mg","60 / RD203",White,Capsule,Capsule,12.6,4.5
