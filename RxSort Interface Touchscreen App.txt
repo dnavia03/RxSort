@@ -1,0 +1,320 @@
+import os
+import time
+import threading
+import queue
+import customtkinter as ctk
+from PIL import Image
+============================================================
+CONFIGURATION
+============================================================
+WINDOW_TITLE = "Raspberry Pi 5 Carousel Pill Sorter"
+Example pill database. Replace these entries with your own.
+PILL_DATABASE = {
+1: {
+"name": "Vitamin C",
+"dosage": "500 mg",
+"instructions": "Example entry. Verify the correct pill before use.",
+"image": "images/vitamin_c.png",
+},
+2: {
+"name": "Vitamin D",
+"dosage": "1000 IU",
+"instructions": "Example entry. Verify the correct pill before use.",
+"image": "images/vitamin_d.png",
+},
+3: {
+"name": "Multivitamin",
+"dosage": "1 tablet",
+"instructions": "Example entry. Verify the correct pill before use.",
+"image": "images/multivitamin.png",
+},
+}
+Example carousel positions in degrees.
+Calibrate these values for your actual hardware.
+SLOT_ANGLES = {
+1: 0,
+2: 120,
+3: 240,
+}
+Replace None with your hardware-specific servo controller.
+This example expects an object with a degree-based .angle property.
+carousel_servo = None
+
+============================================================
+APPLICATION
+============================================================
+class PillSorterApp(ctk.CTk):
+def __init__(self):
+super().__init__()
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
+self.title(WINDOW_TITLE)
+self.geometry("900x520")
+self.minsize(760, 480)
+# Communicate between the hardware worker and GUI thread.
+self.ui_queue = queue.Queue()
+self.sorting_in_progress = False
+self.buttons = []
+self.create_layout()
+# Process GUI updates on the main thread.
+self.after(100, self.process_ui_queue)
+# ========================================================
+# GUI LAYOUT
+# ========================================================
+def create_layout(self):
+"""Create the left control panel and right results panel."""
+self.grid_columnconfigure(0, weight=1)
+self.grid_columnconfigure(1, weight=1)
+self.grid_rowconfigure(0, weight=1)
+# ---------------- LEFT: CONTROL PANEL ----------------
+self.control_panel = ctk.CTkFrame(
+self,
+corner_radius=15,
+)
+self.control_panel.grid(
+row=0,
+column=0,
+padx=20,
+pady=20,
+sticky="nsew",
+)
+self.title_lbl = ctk.CTkLabel(
+self.control_panel,
+text="Carousel Control Hub",
+font=("Arial", 18, "bold"),
+)
+self.title_lbl.pack(pady=20)
+self.status_lbl = ctk.CTkLabel(
+self.control_panel,
+text="System Ready",
+text_color="#2ecc71",
+font=("Arial", 14, "bold"),
+)
+self.status_lbl.pack(pady=10)
+# Create one button for every configured slot.
+for slot_id, data in PILL_DATABASE.items():
+button = ctk.CTkButton(
+self.control_panel,
+text=(
+f"Dispense {data['name'].split()[0]} "
+f"(Slot {slot_id})"
+),
+command=lambda s=slot_id: self.start_sorting_routine(s),
+height=45,
+font=("Arial", 13, "bold"),
+)
+button.pack(
+pady=12,
+padx=30,
+fill="x",
+)
+self.buttons.append(button)
+self.log_lbl = ctk.CTkLabel(
+self.control_panel,
+text="Logs: Waiting for user action...",
+text_color="gray",
+wraplength=320,
+)
+self.log_lbl.pack(
+side="bottom",
+pady=20,
+padx=10,
+)
+# ---------------- RIGHT: RESULTS PANEL ----------------
+self.result_panel = ctk.CTkFrame(
+self,
+corner_radius=15,
+fg_color="#1e2530",
+)
+self.result_panel.grid(
+row=0,
+column=1,
+padx=20,
+pady=20,
+sticky="nsew",
+)
+self.result_title = ctk.CTkLabel(
+self.result_panel,
+text="Identified Pill Output",
+font=("Arial", 16, "bold"),
+text_color="#3498db",
+)
+self.result_title.pack(pady=15)
+self.image_display = ctk.CTkLabel(
+self.result_panel,
+text="[ Image Output Area ]",
+width=250,
+height=200,
+fg_color="#2c3e50",
+corner_radius=10,
+)
+self.image_display.pack(pady=10)
+self.pill_name_lbl = ctk.CTkLabel(
+self.result_panel,
+text="Name: --",
+font=("Arial", 15, "bold"),
+anchor="w",
+)
+self.pill_name_lbl.pack(
+fill="x",
+padx=40,
+pady=4,
+)
+self.pill_dose_lbl = ctk.CTkLabel(
+self.result_panel,
+text="Dosage: --",
+font=("Arial", 13),
+text_color="#bdc3c7",
+anchor="w",
+)
+self.pill_dose_lbl.pack(
+fill="x",
+padx=40,
+pady=4,
+)
+self.pill_info_lbl = ctk.CTkLabel(
+self.result_panel,
+text="Instructions: --",
+font=("Arial", 12, "italic"),
+text_color="#a6b0b5",
+wraplength=350,
+justify="left",
+anchor="w",
+)
+self.pill_info_lbl.pack(
+fill="x",
+padx=40,
+pady=8,
+)
+# ========================================================
+# CAROUSEL CONTROL
+# ========================================================
+def start_sorting_routine(self, slot_id):
+"""Start the hardware routine without freezing the GUI."""
+if self.sorting_in_progress:
+return
+if slot_id not in PILL_DATABASE or slot_id not in SLOT_ANGLES:
+self.log_lbl.configure(text="Error: Invalid slot configuration.")
+return
+self.sorting_in_progress = True
+for button in self.buttons:
+button.configure(state="disabled")
+self.status_lbl.configure(
+text="Rotating Carousel...",
+text_color="#f39c12",
+)
+self.log_lbl.configure(
+text=f"Logs: Moving to Slot {slot_id}..."
+)
+worker = threading.Thread(
+target=self.run_hardware_carousel,
+args=(slot_id,),
+daemon=True,
+)
+worker.start()
+def run_hardware_carousel(self, slot_id):
+"""Run hardware operations in a background thread."""
+try:
+target_angle = SLOT_ANGLES[slot_id]
+# Move the carousel if a compatible servo is configured.
+if carousel_servo is not None:
+carousel_servo.angle = target_angle
+# Simulate motor travel time.
+time.sleep(2.0)
+# Send results to the main GUI thread.
+self.ui_queue.put(
+("success", slot_id, target_angle)
+)
+except Exception as error:
+self.ui_queue.put(
+("error", slot_id, str(error))
+)
+# ========================================================
+# GUI THREAD UPDATES
+# ========================================================
+def process_ui_queue(self):
+"""Process background-thread messages safely."""
+try:
+while True:
+message = self.ui_queue.get_nowait()
+event_type = message[0]
+slot_id = message[1]
+if event_type == "success":
+target_angle = message[2]
+self.log_lbl.configure(
+text=(
+f"Logs: Slot {slot_id} "
+f"positioned at {target_angle} degrees."
+)
+)
+self.display_pill_results(slot_id)
+self.status_lbl.configure(
+text="System Ready",
+text_color="#2ecc71",
+)
+elif event_type == "error":
+error_message = message[2]
+self.log_lbl.configure(
+text=f"Hardware Error: {error_message}"
+)
+self.status_lbl.configure(
+text="Hardware Error",
+text_color="#e74c3c",
+)
+self.sorting_in_progress = False
+for button in self.buttons:
+button.configure(state="normal")
+except queue.Empty:
+pass
+# Schedule the next queue check on the main thread.
+self.after(100, self.process_ui_queue)
+# ========================================================
+# PILL INFORMATION DISPLAY
+# ========================================================
+def display_pill_results(self, slot_id):
+"""Display the selected pill's image and information."""
+pill_data = PILL_DATABASE[slot_id]
+image_path = pill_data["image"]
+if os.path.exists(image_path):
+try:
+with Image.open(image_path) as source_image:
+pil_img = source_image.copy()
+ctk_img = ctk.CTkImage(
+light_image=pil_img,
+dark_image=pil_img,
+size=(250, 180),
+)
+# Keep a reference to prevent the image disappearing.
+self.current_pill_image = ctk_img
+self.image_display.configure(
+image=ctk_img,
+text="",
+)
+except Exception as error:
+self.image_display.configure(
+image=None,
+text=f"Error loading image:
+{error}",
+)
+else:
+self.image_display.configure(
+image=None,
+text=f"Missing image asset:
+{image_path}",
+)
+self.pill_name_lbl.configure(
+text=f"Name: {pill_data['name']}"
+)
+self.pill_dose_lbl.configure(
+text=f"Dosage: {pill_data['dosage']}"
+)
+self.pill_info_lbl.configure(
+text=f"Instructions: {pill_data['instructions']}"
+)
+
+============================================================
+PROGRAM ENTRY POINT
+============================================================
+if __name__ == "__main__":
+app = PillSorterApp()
+app.mainloop()
