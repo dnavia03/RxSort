@@ -28,20 +28,12 @@ def capture_image(camera, folder):
     image_path = folder / f"image_{image_number:03d}.jpg"
 
     print("\nLive preview is ready.")
-    input("Position the pill, then press ENTER to focus...")
-
-    print("Focusing...")
-    success = camera.autofocus_cycle()
-
-    if success:
-        print("Focus locked.")
-
-    else:
-        print("Autofocus could not lock")
+    input("Position the pill, then press ENTER to capture...")
 
     camera.capture_file(str(image_path))
 
     print(f"Picture saved: {image_path}")
+
 
 print("=== RxSort Image Capture ===")
 
@@ -76,11 +68,21 @@ if pill:
     print(f"Top: image_{top_number:03d}.jpg")
     print(f"Bottom: image_{bottom_number:03d}.jpg")
 
-    camera = Picamera2()
+    camera = Picamera2(camera_num=1)
+
+    config = camera.create_preview_configuration(
+        main={"size": (1280, 720)}
+    )
+    camera.configure(config)
 
     try:
         camera.start_preview(Preview.QTGL)
         camera.start()
+
+        camera.set_controls({
+            "AfMode": controls.AfModeEnum.Manual,
+            "LensPosition": 9.00
+        })
 
         print("\nCamera starting...")
         sleep(2)
