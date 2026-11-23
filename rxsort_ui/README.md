@@ -4,8 +4,8 @@ A Python/Tkinter touchscreen UI for the RxSort automated pill identification
 and sorting system (Senior Design Team 6), built around the architecture in
 the project's Senior Design II report: dual top/bottom camera capture ->
 on-device AI classification -> SQLite medication lookup -> carousel + pusher
-sorting, with a 17-bin carousel (bins 1-16 for identified medications, bin
-17 reserved as the reject/discard compartment for anything that can't be
+sorting, with a 15-bin carousel (bins 1-14 for identified medications, bin
+15 reserved as the reject/discard compartment for anything that can't be
 identified confidently).
 
 ## Quick start
@@ -24,7 +24,7 @@ photos taken during pill testing. Without it, the app still runs fine, it
 just shows a drawn placeholder icon in place of any photo.
 
 On first run, `main.py` creates `rxsort.db` (SQLite) next to the project
-and seeds it with 16 example medications. Delete `rxsort.db` at any time to
+and seeds it with the example medications. Delete `rxsort.db` at any time to
 reset the sort history and bin assignments back to the defaults in
 `database.py`.
 
@@ -50,9 +50,8 @@ reset the sort history and bin assignments back to the defaults in
   values.
 * **History** - a scrollable log of every past sort/reject event.
 * **Settings** - adjust the acceptance confidence threshold (80% by
-  default, matching the project README), see the current operating mode,
-  and view the full bin-assignment table.
-* **Manual Control** - manually command the carousel to any of the 17 bins
+  default), see the current operating mode, and view the full bin-assignment table.
+* **Manual Control** - manually command the carousel to any of the bins
   or trigger the pusher, useful for calibration and demos.
 
 ## Project layout
@@ -77,8 +76,8 @@ rxsort_ui/
 ## Adding pill photos
 
 The results screen shows a real top-camera and bottom-camera photo for any
-medication that has them on file, falling back to a drawn placeholder icon
-for the rest. Ibuprofen already has both photos wired up as an example.
+medication that has them on the files. it falls back to a drawn placeholder icon
+if there is no image to show or no image is linked with the image files.
 
 To add photos for another medication:
 
@@ -118,12 +117,10 @@ touching any screen code:
 
 ## Notes
 
-* The 16 seed medications (name, strength, imprint, color, shape, form,
+* The seed medications (name, strength, imprint, color, shape, form,
   dimensions) are realistic example data for demonstration purposes only,
   consistent with the project's own disclaimer that RxSort is an academic
-  prototype and not a certified medical device. Verify and replace this
-  data with confirmed values (e.g. from the FDA NDC directory) before any
-  real-world use.
+  prototype and not a certified medical device. This is NOT for real world use.
 * This code was developed and syntax/logic-tested in a headless sandbox
   without a Tkinter display available, so please do a quick visual pass on
-  your own Raspberry Pi or desktop before the final demo.
+  Raspberry Pi or desktop before testing or doing a demo.
